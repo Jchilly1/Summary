@@ -1,0 +1,53 @@
+ <div id="summary" class="output" hidden>
+        <h2>Summary:</h2>
+        <div id="summary-content"></div>
+    </div>
+
+    <script>
+        async function summarize() {
+            const transcript = document.getElementById("transcript").value;
+            const summaryDiv = document.getElementById("summary");
+            const summaryContent = document.getElementById("summary-content");
+
+            if (!transcript.trim()) {
+                alert("Please paste a transcript before summarizing.");
+                return;
+            }
+
+            summaryContent.innerHTML = "Generating summary...";
+            summaryDiv.hidden = false;
+
+            try {
+                const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer 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`
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "You are a helpful assistant that summarizes phone call transcripts into bullet points and extracts customer information."
+                            },
+                            {
+                                role: "user",
+                                content: `Here is the call transcript: \n\n${transcript}`
+                            }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+                const summary = data.choices[0].message.content;
+                summaryContent.innerHTML = `<pre>${summary}</pre>`;
+            } catch (error) {
+                console.error(error);
+                summaryContent.innerHTML = "An error occurred while summarizing the transcript.";
+            }
+        }
+    </script>
+</body>
+</html>
+
