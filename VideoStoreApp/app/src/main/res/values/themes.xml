@@ -1,0 +1,6 @@
+<resources>
+    <style name="Theme.RewindVideoClub" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#1A1420</item>
+        <item name="android:windowBackground">#1A1420</item>
+    </style>
+</resources>
