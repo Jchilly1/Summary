@@ -1,5 +1,6 @@
 package com.rewindvideo.plex.ui.screens.login
 
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
@@ -20,6 +21,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -86,16 +90,34 @@ private fun IdleContent(onStart: () -> Unit) {
     }
 }
 
+private fun tryOpenBrowser(context: Context, linkUrl: String): Boolean {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))
+    return if (intent.resolveActivity(context.packageManager) != null) {
+        context.startActivity(intent)
+        true
+    } else {
+        false
+    }
+}
+
 @Composable
 private fun AwaitingLinkContent(code: String, linkUrl: String) {
     val context = LocalContext.current
+    // Devices with no browser at all (many Google TV / Android TV boxes) just never get an
+    // auto-opened tab -- the on-screen code is the primary path there, entered on any other
+    // device at plex.tv/link.
+    var browserAvailable by remember { mutableStateOf(true) }
     LaunchedEffect(linkUrl) {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl)))
+        browserAvailable = tryOpenBrowser(context, linkUrl)
     }
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Finish signing in in your browser", style = MaterialTheme.typography.titleLarge, color = CreamLabel)
+        Text("Finish signing in at plex.tv/link", style = MaterialTheme.typography.titleLarge, color = CreamLabel, textAlign = TextAlign.Center)
         Text(
-            text = "If it didn't open automatically, go to plex.tv/link and enter:",
+            text = if (browserAvailable) {
+                "If it didn't open automatically, go to plex.tv/link on any device and enter:"
+            } else {
+                "On your phone or computer, go to plex.tv/link and enter:"
+            },
             style = MaterialTheme.typography.bodyMedium,
             color = CreamLabel,
             textAlign = TextAlign.Center,
@@ -109,11 +131,13 @@ private fun AwaitingLinkContent(code: String, linkUrl: String) {
             modifier = Modifier.padding(top = 24.dp),
         )
         CircularProgressIndicator(modifier = Modifier.padding(top = 12.dp), color = Mustard)
-        OutlinedButton(
-            onClick = { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(linkUrl))) },
-            modifier = Modifier.padding(top = 20.dp),
-        ) {
-            Text("Reopen Sign-In Page")
+        if (browserAvailable) {
+            OutlinedButton(
+                onClick = { tryOpenBrowser(context, linkUrl) },
+                modifier = Modifier.padding(top = 20.dp),
+            ) {
+                Text("Reopen Sign-In Page")
+            }
         }
     }
 }
